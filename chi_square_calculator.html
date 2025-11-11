@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chi-square & Δχ² (Nested Models) Calculator</title>
 <style>
+  /* Layout + sizing reset for predictable box behavior */
+  *, *::before, *::after { box-sizing: border-box; }
+
   :root {
     --bg: #0b0b10;
     --card: #151724;
@@ -15,59 +18,98 @@
     --warn: #f9e2af;
     --bad: #f38ba8;
     --border: #2a2f45;
+    --input-bg: #0f1120;
+    --field-bg: #101228;
   }
+
   html, body {
     margin: 0; padding: 0;
     background: var(--bg); color: var(--text);
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-    line-height: 1.4;
+    line-height: 1.45;
   }
+
   .wrap {
-    max-width: 980px; margin: 32px auto; padding: 0 16px;
+    max-width: 980px;
+    margin-left: auto; margin-right: auto;
+    padding-left: 16px; padding-right: 16px;
+    padding-top: 32px; padding-bottom: 32px;
   }
-  h1 { font-size: 1.8rem; margin: 0 0 4px; }
+
+  h1 { font-size: 1.8rem; margin: 0 0 6px; }
   p.lead { color: var(--muted); margin-top: 0; }
+
   .grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 20px;
   }
   @media (min-width: 900px) {
     .grid { grid-template-columns: 1fr 1fr; }
   }
+
   .card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    padding: 18px;
+    padding: 20px;
   }
-  h2 { font-size: 1.2rem; margin: 0 0 12px; }
-  label { display: block; margin: 10px 0 6px; color: var(--muted); }
+
+  h2 { font-size: 1.15rem; margin: 0 0 14px; }
+  label { display: block; margin: 12px 0 6px; color: var(--muted); }
+
+  /* Field wrapper ensures inputs are "inside" larger boxes with padding */
+  .field {
+    background: var(--field-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+  }
+
   input {
-    width: 100%; padding: 10px 12px;
-    border: 1px solid var(--border); border-radius: 10px;
-    background: #0f1120; color: var(--text);
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
     font-size: 0.95rem;
+    line-height: 1.2;
+    /* Prevent any overflow beyond the field/card */
+    max-width: 100%;
   }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: end;
+  }
+
   .btn {
     appearance: none; border: 1px solid var(--border);
     background: linear-gradient(180deg, #1a1d30, #121527);
-    color: var(--text); padding: 10px 14px; border-radius: 10px;
+    color: var(--text); padding: 11px 14px; border-radius: 10px;
     cursor: pointer; font-weight: 600; letter-spacing: .2px;
+    width: 100%;
   }
   .btn:hover { border-color: #3a4062; }
+
   .result {
     margin-top: 12px; padding: 12px; border-radius: 12px;
     border: 1px dashed var(--border); background: #0e1020;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    overflow-wrap: anywhere;
   }
+
   .small { font-size: .9rem; color: var(--muted); }
   .bad { color: var(--bad); }
   .good { color: var(--good); }
   .warn { color: var(--warn); }
-  .foot { margin-top: 22px; color: var(--muted); font-size: 0.9rem; }
+
+  .foot { margin-top: 24px; color: var(--muted); font-size: 0.92rem; }
   .kicker { color: var(--accent); font-weight: 700; }
 </style>
 </head>
@@ -80,35 +122,71 @@
   <div class="grid">
     <div class="card">
       <h2>1) Chi-square p-value</h2>
+
       <label for="chi2">χ² (test statistic)</label>
-      <input id="chi2" type="number" step="any" value="3.84">
-      <div class="row">
+      <div class="field">
+        <input id="chi2" type="number" step="any" value="3.84">
+      </div>
+
+      <div class="row" style="margin-top:12px;">
         <div>
           <label for="df">df</label>
-          <input id="df" type="number" step="1" value="1" min="1">
+          <div class="field">
+            <input id="df" type="number" step="1" value="1" min="1">
+          </div>
         </div>
-        <div style="display:flex; align-items:flex-end;">
+        <div>
+          <label>&nbsp;</label>
           <button class="btn" id="btn1">Compute p</button>
         </div>
       </div>
+
       <div class="result" id="res1">p (right tail) = 0.0500</div>
       <div class="small">Formula: p = Q(k, x) with k = df/2, x = χ²/2 (regularized upper incomplete gamma).</div>
     </div>
 
     <div class="card">
       <h2>2) Δχ² Difference Test (Nested Models)</h2>
+
       <div class="row">
-        <div><label>Baseline χ²</label><input id="chi2_base" type="number" step="any" value="100"></div>
-        <div><label>Baseline df</label><input id="df_base" type="number" step="1" value="80" min="1"></div>
+        <div>
+          <label>Baseline χ²</label>
+          <div class="field">
+            <input id="chi2_base" type="number" step="any" value="100">
+          </div>
+        </div>
+        <div>
+          <label>Baseline df</label>
+          <div class="field">
+            <input id="df_base" type="number" step="1" value="80" min="1">
+          </div>
+        </div>
       </div>
-      <div class="row">
-        <div><label>Nested χ²</label><input id="chi2_nest" type="number" step="any" value="110"></div>
-        <div><label>Nested df</label><input id="df_nest" type="number" step="1" value="85" min="1"></div>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Nested χ²</label>
+          <div class="field">
+            <input id="chi2_nest" type="number" step="any" value="110">
+          </div>
+        </div>
+        <div>
+          <label>Nested df</label>
+          <div class="field">
+            <input id="df_nest" type="number" step="1" value="85" min="1">
+          </div>
+        </div>
       </div>
-      <div style="margin-top:10px; display:flex; gap:10px;">
-        <button class="btn" id="btn2">Compute Δχ² p</button>
-        <button class="btn" id="btnSwap" title="Swap model rows">Swap models</button>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <button class="btn" id="btn2">Compute Δχ² p</button>
+        </div>
+        <div>
+          <button class="btn" id="btnSwap" title="Swap model rows">Swap models</button>
+        </div>
       </div>
+
       <div class="result" id="res2">Δχ² = 10.000, Δdf = 5, p = 0.0752</div>
       <div class="small">Significant p ⇒ constraints worsen fit ⇒ reject the nested model.</div>
     </div>
@@ -121,11 +199,7 @@
 </div>
 
 <script>
-// --- Math helpers: log gamma and regularized incomplete gamma (P and Q) ---
-// Based on Numerical Recipes approaches
-
 function gammaln(z) {
-  // Lanczos approximation (Spouge-like coefficients)
   const cof = [
     76.18009172947146,   -86.50532032941677, 24.01409824083091,
     -1.231739572450155,   0.1208650973866179e-2, -0.5395239384953e-5
@@ -142,7 +216,6 @@ function gammaln(z) {
   return -tmp + Math.log(2.5066282746310005 * ser / x);
 }
 
-// Regularized lower incomplete gamma P(a,x) via series
 function _gser(a, x) {
   const ITMAX = 1000;
   const EPS = 1e-14;
@@ -160,7 +233,6 @@ function _gser(a, x) {
   return sum * Math.exp(-x + a * Math.log(x) - gln);
 }
 
-// Regularized upper incomplete gamma Q(a,x) via continued fraction
 function _gcf(a, x) {
   const ITMAX = 1000;
   const EPS = 1e-14;
@@ -185,20 +257,9 @@ function _gcf(a, x) {
   return Math.exp(-x + a * Math.log(x) - gln) * h;
 }
 
-// Regularized incomplete gamma
-function gammap(a, x) {
-  // P(a,x)
-  if (x < a + 1) return _gser(a, x);
-  // else use complement symmetry
-  return 1 - _gcf(a, x);
-}
-function gammaq(a, x) {
-  // Q(a,x) = 1 - P(a,x)
-  if (x < a + 1) return 1 - _gser(a, x);
-  return _gcf(a, x);
-}
+function gammap(a, x) { if (x < a + 1) return _gser(a, x); return 1 - _gcf(a, x); }
+function gammaq(a, x) { if (x < a + 1) return 1 - _gser(a, x); return _gcf(a, x); }
 
-// Chi-square tail: p = Pr[ChiSq_df >= chi2] = Q(k, x) with k=df/2, x=chi2/2
 function chisq_p_right(chi2, df) {
   if (!(isFinite(chi2) && isFinite(df))) return NaN;
   if (df <= 0 || chi2 < 0) return NaN;
@@ -212,7 +273,6 @@ function fmt(x, digits=6) {
   return (+x).toFixed(digits);
 }
 
-// UI Handlers
 function calcSingle() {
   const chi2 = parseFloat(document.getElementById('chi2').value);
   const df = parseInt(document.getElementById('df').value, 10);
@@ -265,12 +325,10 @@ function swapModels() {
   calcDiff();
 }
 
-// Wire up
 document.getElementById('btn1').addEventListener('click', calcSingle);
 document.getElementById('btn2').addEventListener('click', calcDiff);
 document.getElementById('btnSwap').addEventListener('click', swapModels);
 
-// Initial compute
 calcSingle();
 calcDiff();
 </script>
