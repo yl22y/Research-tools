@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chi-square & Δχ² (Nested Models) Calculator</title>
+<style>
+  :root {
+    --bg: #0b0b10;
+    --card: #151724;
+    --text: #e9ecf1;
+    --muted: #b6bdc9;
+    --accent: #7aa2f7;
+    --good: #a6e3a1;
+    --warn: #f9e2af;
+    --bad: #f38ba8;
+    --border: #2a2f45;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    line-height: 1.4;
+  }
+  .wrap {
+    max-width: 980px; margin: 32px auto; padding: 0 16px;
+  }
+  h1 { font-size: 1.8rem; margin: 0 0 4px; }
+  p.lead { color: var(--muted); margin-top: 0; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 900px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    padding: 18px;
+  }
+  h2 { font-size: 1.2rem; margin: 0 0 12px; }
+  label { display: block; margin: 10px 0 6px; color: var(--muted); }
+  input {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: #0f1120; color: var(--text);
+    font-size: 0.95rem;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn {
+    appearance: none; border: 1px solid var(--border);
+    background: linear-gradient(180deg, #1a1d30, #121527);
+    color: var(--text); padding: 10px 14px; border-radius: 10px;
+    cursor: pointer; font-weight: 600; letter-spacing: .2px;
+  }
+  .btn:hover { border-color: #3a4062; }
+  .result {
+    margin-top: 12px; padding: 12px; border-radius: 12px;
+    border: 1px dashed var(--border); background: #0e1020;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  .small { font-size: .9rem; color: var(--muted); }
+  .bad { color: var(--bad); }
+  .good { color: var(--good); }
+  .warn { color: var(--warn); }
+  .foot { margin-top: 22px; color: var(--muted); font-size: 0.9rem; }
+  .kicker { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Chi-square & Δχ² (Nested Models) Calculator</h1>
+  <p class="lead">Enter values and compute exact right-tail p-values using the chi-square distribution.
+    No external libraries. Ready for Canvas or GitHub Pages.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1) Chi-square p-value</h2>
+      <label for="chi2">χ² (test statistic)</label>
+      <input id="chi2" type="number" step="any" value="3.84">
+      <div class="row">
+        <div>
+          <label for="df">df</label>
+          <input id="df" type="number" step="1" value="1" min="1">
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn" id="btn1">Compute p</button>
+        </div>
+      </div>
+      <div class="result" id="res1">p (right tail) = 0.0500</div>
+      <div class="small">Formula: p = Q(k, x) with k = df/2, x = χ²/2 (regularized upper incomplete gamma).</div>
+    </div>
+
+    <div class="card">
+      <h2>2) Δχ² Difference Test (Nested Models)</h2>
+      <div class="row">
+        <div><label>Baseline χ²</label><input id="chi2_base" type="number" step="any" value="100"></div>
+        <div><label>Baseline df</label><input id="df_base" type="number" step="1" value="80" min="1"></div>
+      </div>
+      <div class="row">
+        <div><label>Nested χ²</label><input id="chi2_nest" type="number" step="any" value="110"></div>
+        <div><label>Nested df</label><input id="df_nest" type="number" step="1" value="85" min="1"></div>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:10px;">
+        <button class="btn" id="btn2">Compute Δχ² p</button>
+        <button class="btn" id="btnSwap" title="Swap model rows">Swap models</button>
+      </div>
+      <div class="result" id="res2">Δχ² = 10.000, Δdf = 5, p = 0.0752</div>
+      <div class="small">Significant p ⇒ constraints worsen fit ⇒ reject the nested model.</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="kicker">Tips</span>: For Δχ², the nested (more constrained) model should have a <em>larger</em> df.
+    If your Δdf ≤ 0 or Δχ² &lt; 0, re-check which model is “baseline” vs. “nested.”
+  </div>
+</div>
+
+<script>
+// --- Math helpers: log gamma and regularized incomplete gamma (P and Q) ---
+// Based on Numerical Recipes approaches
+
+function gammaln(z) {
+  // Lanczos approximation (Spouge-like coefficients)
+  const cof = [
+    76.18009172947146,   -86.50532032941677, 24.01409824083091,
+    -1.231739572450155,   0.1208650973866179e-2, -0.5395239384953e-5
+  ];
+  let x = z;
+  let y = z;
+  let tmp = x + 5.5;
+  tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (let j = 0; j < cof.length; j++) {
+    y += 1;
+    ser += cof[j] / y;
+  }
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+
+// Regularized lower incomplete gamma P(a,x) via series
+function _gser(a, x) {
+  const ITMAX = 1000;
+  const EPS = 1e-14;
+  if (x <= 0) return 0;
+  let gln = gammaln(a);
+  let ap = a;
+  let sum = 1 / a;
+  let del = sum;
+  for (let n = 1; n <= ITMAX; n++) {
+    ap += 1;
+    del *= x / ap;
+    sum += del;
+    if (Math.abs(del) < Math.abs(sum) * EPS) break;
+  }
+  return sum * Math.exp(-x + a * Math.log(x) - gln);
+}
+
+// Regularized upper incomplete gamma Q(a,x) via continued fraction
+function _gcf(a, x) {
+  const ITMAX = 1000;
+  const EPS = 1e-14;
+  const FPMIN = 1e-300;
+  let gln = gammaln(a);
+  let b = x + 1 - a;
+  let c = 1 / FPMIN;
+  let d = 1 / b;
+  let h = d;
+  for (let i = 1; i <= ITMAX; i++) {
+    let an = -i * (i - a);
+    b += 2;
+    d = an * d + b;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = b + an / c;
+    if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    let del = d * c;
+    h *= del;
+    if (Math.abs(del - 1.0) < EPS) break;
+  }
+  return Math.exp(-x + a * Math.log(x) - gln) * h;
+}
+
+// Regularized incomplete gamma
+function gammap(a, x) {
+  // P(a,x)
+  if (x < a + 1) return _gser(a, x);
+  // else use complement symmetry
+  return 1 - _gcf(a, x);
+}
+function gammaq(a, x) {
+  // Q(a,x) = 1 - P(a,x)
+  if (x < a + 1) return 1 - _gser(a, x);
+  return _gcf(a, x);
+}
+
+// Chi-square tail: p = Pr[ChiSq_df >= chi2] = Q(k, x) with k=df/2, x=chi2/2
+function chisq_p_right(chi2, df) {
+  if (!(isFinite(chi2) && isFinite(df))) return NaN;
+  if (df <= 0 || chi2 < 0) return NaN;
+  const k = df / 2;
+  const x = chi2 / 2;
+  return gammaq(k, x);
+}
+
+function fmt(x, digits=6) {
+  if (!isFinite(x)) return "NaN";
+  return (+x).toFixed(digits);
+}
+
+// UI Handlers
+function calcSingle() {
+  const chi2 = parseFloat(document.getElementById('chi2').value);
+  const df = parseInt(document.getElementById('df').value, 10);
+  const res = document.getElementById('res1');
+  if (!(isFinite(chi2) && isFinite(df) && df > 0 && chi2 >= 0)) {
+    res.innerHTML = '<span class="warn">Please enter χ² ≥ 0 and df ≥ 1.</span>';
+    return;
+  }
+  const p = chisq_p_right(chi2, df);
+  if (!isFinite(p)) {
+    res.innerHTML = '<span class="warn">Computation error. Try smaller values.</span>';
+    return;
+  }
+  res.textContent = `p (right tail) = ${fmt(p, 6)}`;
+}
+
+function calcDiff() {
+  const cB = parseFloat(document.getElementById('chi2_base').value);
+  const dB = parseInt(document.getElementById('df_base').value, 10);
+  const cN = parseFloat(document.getElementById('chi2_nest').value);
+  const dN = parseInt(document.getElementById('df_nest').value, 10);
+  const res = document.getElementById('res2');
+
+  if (![cB,dB,cN,dN].every(v => isFinite(v))) {
+    res.innerHTML = '<span class="warn">Please enter numeric values for all fields.</span>';
+    return;
+  }
+  if (dB < 1 || dN < 1) {
+    res.innerHTML = '<span class="warn">df must be ≥ 1.</span>';
+    return;
+  }
+  const dChi = cN - cB;
+  const ddf = dN - dB;
+  if (ddf <= 0 || dChi < 0) {
+    res.innerHTML = `<span class="bad">Check model order.</span> Δχ² = ${fmt(dChi,3)}, Δdf = ${ddf}. The nested model should have larger df and χ² ≥ baseline.`;
+    return;
+  }
+  const p = chisq_p_right(dChi, ddf);
+  res.textContent = `Δχ² = ${fmt(dChi,3)}, Δdf = ${ddf}, p = ${fmt(p,6)}`;
+}
+
+function swapModels() {
+  const cB = document.getElementById('chi2_base');
+  const dB = document.getElementById('df_base');
+  const cN = document.getElementById('chi2_nest');
+  const dN = document.getElementById('df_nest');
+  const t1 = cB.value, t2 = dB.value;
+  cB.value = cN.value; dB.value = dN.value;
+  cN.value = t1; dN.value = t2;
+  calcDiff();
+}
+
+// Wire up
+document.getElementById('btn1').addEventListener('click', calcSingle);
+document.getElementById('btn2').addEventListener('click', calcDiff);
+document.getElementById('btnSwap').addEventListener('click', swapModels);
+
+// Initial compute
+calcSingle();
+calcDiff();
+</script>
+</body>
+</html>
