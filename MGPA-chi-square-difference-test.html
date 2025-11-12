@@ -203,10 +203,11 @@
           <li>Models must be <em>nested</em> to use χ² difference testing.</li>
           <li>For robust estimators (MLR, WLSMV), use Mplus <code>DIFFTEST</code> and paste its χ² and df here.</li>
           <li>Interpretation guide:
-            <ul style="margin-top:6px">
+            <ul style="margin-top:6px; margin-bottom:6px;">
               <li><strong>Interpreting the χ² difference:</strong> 
-                A non-significant result (p ≥ .05) means groups are statistically similar—keep equal paths. 
-                A significant result (p &lt; .05) means groups differ—free the paths by naming them separately (e.g., <code>a1</code>/<code>a2</code> for effective vs. ineffective help).</li>
+                  <li><strong>p ≥ .05</strong>: No significant worsening of fit → groups are statistically similar; keep equal path labels.</li>
+                  <li><strong>p &lt; .05</strong>: Constraining paths worsens fit → groups differ; free the paths by naming them separately (e.g., <code>a1</code>/<code>a2</code> for effective vs. ineffective help).</li>
+            </ul></li>
             </ul>
           </li>
         </ul>
