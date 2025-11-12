@@ -48,7 +48,11 @@
       grid-template-columns: 1fr 1fr;
     }
   }
-
+@media (min-width: 900px){
+  .card.wide {
+    grid-column: 1 / -1; /* spans both columns */
+  }
+}
   .card{
     background: var(--panel);
     color: var(--ink);
@@ -193,7 +197,7 @@
         </p>
       </article>
       <!-- QUICK NOTES -->
-      <article class="card" aria-labelledby="notes-title">
+      <article class="card wide" aria-labelledby="notes-title">
         <h2 id="notes-title">Notes & Tips</h2>
         <ul class="muted" style="margin:0 0 4px 18px;">
           <li>Models must be <em>nested</em> to use χ² difference testing.</li>
