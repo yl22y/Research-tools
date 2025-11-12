@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MGPA Model Comparison Calculator</title>
+<style>
+  :root{
+    --bg: #0b0c10;
+    --panel: #ffffff;
+    --ink: #111827;
+    --muted:#6b7280;
+    --accent:#1f6feb; /* neutral blue; easy to read on white */
+    --ok:#0f766e;
+    --warn:#b45309;
+    --err:#b91c1c;
+    --ring: rgba(31,111,235,0.35);
+    --radius: 16px;
+    --maxw: 860px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body{
+    margin:0; padding: 32px 16px;
+    background: linear-gradient(180deg,#0b0c10,#12151a);
+    font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial,sans-serif;
+    color:#f3f4f6;
+  }
+
+  .wrap{ max-width: var(--maxw); margin: 0 auto; }
+
+  h1{
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    margin: 0 0 16px;
+    line-height: 1.2;
+  }
+  p.lead{
+    margin: 0 0 20px;
+    color:#d1d5db;
+  }
+  .grid{
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 900px){
+    .grid{
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .card{
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    padding: 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    min-width: 0; /* prevent overflow */
+  }
+  .card h2{
+    font-size: 1.05rem;
+    margin: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .muted{ color: var(--muted); font-size: .95rem; }
+
+  .row{
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr;
+  }
+  .row-3{
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .field{
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  label{
+    font-size: .9rem; color: #374151; font-weight: 600;
+  }
+  input[type="number"]{
+    appearance: textfield;
+  }
+  input{
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 1rem;
+    color: var(--ink);
+    background: #fff;
+    outline: none;
+  }
+  input:focus{
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+  .btn{
+    display: inline-flex; align-items: center; justify-content:center;
+    padding: 10px 14px; border-radius: 999px; border: 0;
+    background: var(--accent); color: #fff; font-weight: 700; cursor: pointer;
+  }
+  .btn:focus-visible{ outline: 3px solid var(--ring); outline-offset: 2px; }
+
+  .result{
+    border-top: 1px dashed #e5e7eb; padding-top: 10px; margin-top: 4px;
+    font-size: .98rem;
+  }
+  .chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:700; font-size:.85rem; }
+  .chip.ok{ background:#ecfdf5; color: var(--ok); }
+  .chip.warn{ background:#fffbeb; color: var(--warn); }
+  .chip.err{ background:#fef2f2; color: var(--err); }
+
+  .note{
+    font-size: .9rem; color: var(--muted);
+    background:#f8fafc; border:1px solid #e5e7eb; padding:10px; border-radius:10px;
+  }
+
+  footer{ margin-top: 18px; font-size: .9rem; color:#cbd5e1; }
+  code{ background:#0b1220; color:#dbeafe; padding:2px 6px; border-radius:6px; }
+</style>
+</head>
+<body>
+  <main class="wrap" role="main">
+    <h1>MGPA Model Comparison Calculator</h1>
+    <p class="lead">
+      Compare nested models and get p-values. Works for standard ML (direct χ² difference) and for
+      Mplus <strong>DIFFTEST</strong> outputs (WLSMV or MLR). Includes a CFA df helper (your Excel formula).
+    </p>
+
+    <section class="grid" aria-label="calculators">
+      <!-- ML CHI-SQUARE DIFFERENCE -->
+      <article class="card" aria-labelledby="ml-title">
+        <h2 id="ml-title">ML χ² Difference Test (nested models)</h2>
+        <p class="muted">Enter χ² and df for both models. Typically, “Model 1 = unconstrained (fewer df)” and “Model 2 = constrained (more df)”.</p>
+
+        <div class="row">
+          <div class="field">
+            <label for="mlChi1">Model 1 χ² (unconstrained)</label>
+            <input id="mlChi1" type="number" step="any" min="0" placeholder="e.g., 125.37" inputmode="decimal" />
+          </div>
+          <div class="field">
+            <label for="mlDf1">Model 1 df</label>
+            <input id="mlDf1" type="number" step="1" min="0" placeholder="e.g., 110" inputmode="numeric" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="mlChi2">Model 2 χ² (constrained)</label>
+            <input id="mlChi2" type="number" step="any" min="0" placeholder="e.g., 136.92" inputmode="decimal" />
+          </div>
+          <div class="field">
+            <label for="mlDf2">Model 2 df</label>
+            <input id="mlDf2" type="number" step="1" min="0" placeholder="e.g., 114" inputmode="numeric" />
+          </div>
+        </div>
+
+        <button class="btn" id="btn-ml">Compute ML Δχ²</button>
+
+        <div class="result" id="ml-out" aria-live="polite"></div>
+
+        <p class="note">
+          For ML, Δχ² = χ²<sub>constrained</sub> − χ²<sub>unconstrained</sub>, Δdf = df<sub>constrained</sub> − df<sub>unconstrained</sub>, and p is from χ²(Δdf).
+        </p>
+      </article>
+
+      <!-- DIFFTEST P-VALUE -->
+      <article class="card" aria-labelledby="diff-title">
+        <h2 id="diff-title">Mplus DIFFTEST Helper (WLSMV or MLR)</h2>
+        <p class="muted">If you ran <code>DIFFTEST</code> in Mplus, enter the reported DIFFTEST χ² value and df here to get the p-value.</p>
+
+        <div class="row">
+          <div class="field">
+            <label for="diffChi">DIFFTEST χ²</label>
+            <input id="diffChi" type="number" step="any" min="0" placeholder="e.g., 18.46" inputmode="decimal" />
+          </div>
+          <div class="field">
+            <label for="diffDf">DIFFTEST df</label>
+            <input id="diffDf" type="number" step="1" min="1" placeholder="e.g., 4" inputmode="numeric" />
+          </div>
+        </div>
+
+        <button class="btn" id="btn-diff">Compute p-value</button>
+
+        <div class="result" id="diff-out" aria-live="polite"></div>
+
+        <p class="note">
+          This is for the value Mplus prints under <em>DIFFTEST RESULTS</em>. You don’t need raw model χ² or scaling factors here.
+        </p>
+      </article>
+
+      <!-- CFA DF HELPER -->
+      <article class="card" aria-labelledby="cfa-title">
+        <h2 id="cfa-title">CFA df Helper (Excel formula)</h2>
+        <p class="muted">Implements your Excel: <code>(A2*(A2-3)/2) - (B2*(B2-1)/2)</code>, where A2 = items, B2 = factors.</p>
+
+        <div class="row">
+          <div class="field">
+            <label for="cfaItems">Number of items (A2)</label>
+            <input id="cfaItems" type="number" step="1" min="1" placeholder="e.g., 48" inputmode="numeric" />
+          </div>
+          <div class="field">
+            <label for="cfaFactors">Number of factors (B2)</label>
+            <input id="cfaFactors" type="number" step="1" min="1" placeholder="e.g., 8" inputmode="numeric" />
+          </div>
+        </div>
+
+        <button class="btn" id="btn-cfa">Compute df</button>
+
+        <div class="result" id="cfa-out" aria-live="polite"></div>
+
+        <p class="note">
+          Example: items = 48, factors = 8 → df = (48×45/2) − (8×7/2) = 1080 − 28 = 1052.
+        </p>
+      </article>
+
+      <!-- QUICK NOTES -->
+      <article class="card" aria-labelledby="notes-title">
+        <h2 id="notes-title">Notes & Tips</h2>
+        <ul class="muted" style="margin:0 0 4px 18px;">
+          <li>Models must be <em>nested</em> to use χ² difference testing.</li>
+          <li>For robust estimators (MLR, WLSMV), use Mplus <code>DIFFTEST</code> and paste its χ² and df here.</li>
+          <li>Interpretation guide:
+            <ul style="margin-top:6px">
+              <li><strong>p &lt; .05</strong>: Constrained model fits worse → constraint likely not supported (groups differ).</li>
+              <li><strong>p ≥ .05</strong>: No significant worsening → constraint may be tenable.</li>
+            </ul>
+          </li>
+        </ul>
+        <p class="note">If you only have ML output (no DIFFTEST), use the ML tester on the left.</p>
+      </article>
+    </section>
+
+    <footer>
+      <p>Pro tip: Save this as <code>index.html</code> in your GitHub repo. For GitHub Pages, enable Pages in Settings → Pages, and select the branch (usually <code>main</code>) and root or <code>/docs</code> folder.</p>
+    </footer>
+  </main>
+
+<script>
+/* ---------- Math helpers: Gamma/Chi-square survival ---------- */
+/* log-gamma using Lanczos approximation */
+function gammaln(z){
+  const g = 7, p = [
+    0.99999999999980993,
+    676.5203681218851,   -1259.1392167224028,
+    771.32342877765313,  -176.61502916214059,
+    12.507343278686905,  -0.13857109526572012,
+    9.9843695780195716e-6, 1.5056327351493116e-7
+  ];
+  if(z < 0.5){
+    // reflection formula
+    return Math.log(Math.PI) - Math.log(Math.sin(Math.PI*z)) - gammaln(1 - z);
+  }
+  z -= 1;
+  let x = p[0];
+  for(let i=1;i<p.length;i++) x += p[i]/(z+i);
+  const t = z + g + 0.5;
+  return 0.5*Math.log(2*Math.PI) + (z+0.5)*Math.log(t) - t + Math.log(x) - Math.log(z+1);
+}
+
+/* Regularized upper incomplete gamma Q(s,x) via continued fraction */
+function gammainc_Q(s, x){
+  if (x <= 0) return 1;
+  if (x < s + 1){
+    // Use P(s,x) series then Q=1-P
+    let sum = 1/s, term = sum, n = 1;
+    while (Math.abs(term) > 1e-14 && n < 10000){
+      term *= x / (s + n);
+      sum += term;
+      n++;
+    }
+    const logP = -x + s*Math.log(x) - gammaln(s) + Math.log(sum);
+    const P = Math.exp(logP);
+    return Math.max(0, Math.min(1, 1 - P));
+  } else {
+    // Continued fraction for Q directly
+    let a0 = 1, a1 = x, b0 = 0, b1 = 1, fac = 1, n = 1;
+    let gOld = a1/b1, g = gOld;
+    while (n < 10000){
+      const an = n;
+      const coef = an - s;
+      a0 = (a1 + a0*coef)*1;
+      b0 = (b1 + b0*coef)*1;
+
+      a1 = x*a0 + an*a1;
+      b1 = x*b0 + an*b1;
+
+      if (b1 !== 0){
+        g = a1/b1;
+        if (Math.abs((g - gOld)/g) < 1e-12) break;
+        gOld = g;
+      }
+      n++;
+    }
+    const logQ = -x + s*Math.log(x) - gammaln(s) + Math.log(g);
+    return Math.max(0, Math.min(1, Math.exp(logQ)));
+  }
+}
+
+/* Chi-square survival function: p = P(Χ^2_k >= x) */
+function chiSquareSF(x, k){
+  if (x < 0 || k <= 0) return NaN;
+  const s = k/2, t = x/2;
+  return gammainc_Q(s, t);
+}
+
+/* ---------- UI helpers ---------- */
+function fmt(x, digits=4){
+  if (!isFinite(x)) return '—';
+  return Number.parseFloat(x).toFixed(digits);
+}
+function badge(p){
+  if (!isFinite(p)) return '';
+  if (p < 0.001) return '<span class="chip err">p &lt; .001</span>';
+  if (p < 0.01)  return '<span class="chip err">p &lt; .01</span>';
+  if (p < 0.05)  return '<span class="chip err">p &lt; .05</span>';
+  if (p < 0.10)  return '<span class="chip warn">p &lt; .10</span>';
+  return '<span class="chip ok">ns</span>';
+}
+function guardNums(ids){
+  const vals = ids.map(id => Number(document.getElementById(id).value));
+  if (vals.some(v => Number.isNaN(v))) throw new Error("Please fill in all numeric fields.");
+  return vals;
+}
+
+/* ---------- ML Δχ² ---------- */
+document.getElementById('btn-ml').addEventListener('click', () => {
+  const out = document.getElementById('ml-out');
+  try{
+    const [chi1, df1, chi2, df2] = guardNums(['mlChi1','mlDf1','mlChi2','mlDf2']);
+    const dChi = chi2 - chi1;
+    const dDf  = df2 - df1;
+
+    if (dDf <= 0) throw new Error("Model 2 must have ≥ df than Model 1 (nested & more constrained).");
+
+    const p = chiSquareSF(dChi, dDf);
+
+    out.innerHTML = `
+      <div><strong>Δχ²</strong> = ${fmt(dChi,3)}, <strong>Δdf</strong> = ${dDf}, <strong>p</strong> = ${fmt(p,4)} ${badge(p)}</div>
+      <div class="muted" style="margin-top:6px">
+        Interpretation: ${p < 0.05 ? 'Constrained model fits significantly worse (constraint likely not supported).' : 'No significant fit worsening (constraint may be tenable).'}
+      </div>
+    `;
+  }catch(err){
+    out.innerHTML = `<span class="chip err" role="alert">${err.message}</span>`;
+  }
+});
+
+/* ---------- DIFFTEST p-value ---------- */
+document.getElementById('btn-diff').addEventListener('click', () => {
+  const out = document.getElementById('diff-out');
+  try{
+    const [chi, df] = guardNums(['diffChi','diffDf']);
+    if (df <= 0) throw new Error("df must be ≥ 1.");
+    const p = chiSquareSF(chi, df);
+    out.innerHTML = `
+      <div><strong>p</strong> = ${fmt(p,4)} ${badge(p)}</div>
+      <div class="muted" style="margin-top:6px">
+        Uses χ²(${df}) tail from your Mplus DIFFTEST output.
+      </div>
+    `;
+  }catch(err){
+    out.innerHTML = `<span class="chip err" role="alert">${err.message}</span>`;
+  }
+});
+
+/* ---------- CFA df helper ---------- */
+document.getElementById('btn-cfa').addEventListener('click', () => {
+  const out = document.getElementById('cfa-out');
+  try{
+    const [items, factors] = guardNums(['cfaItems','cfaFactors']);
+    if (items < 1 || factors < 1) throw new Error("Items and factors must be ≥ 1.");
+    const df = (items*(items-3)/2) - (factors*(factors-1)/2);
+    out.innerHTML = `
+      <div><strong>df</strong> = ${fmt(df,0)}</div>
+      <div class="muted" style="margin-top:6px">
+        Computed as (items·(items−3)/2) − (factors·(factors−1)/2).
+      </div>
+    `;
+  }catch(err){
+    out.innerHTML = `<span class="chip err" role="alert">${err.message}</span>`;
+  }
+});
+</script>
+</body>
+</html>
