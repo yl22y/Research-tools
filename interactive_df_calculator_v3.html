@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Degrees of Freedom Calculator (v3)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root{ --garnet:#782F40; --gold:#CEB888; }
+    html,body{margin:0;padding:0}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+      line-height:1.5;color:#111;background:#fff;
+    }
+    header{ padding:1.25rem 1rem; border-bottom:3px solid var(--garnet);
+      background:linear-gradient(180deg, rgba(206,184,136,.15), transparent 60%); }
+    .container{max-width:980px;margin:0 auto;padding:1rem}
+    h1{margin:.2rem 0 .2rem 0;color:var(--garnet)}
+    h2{margin:1.5rem 0 .6rem 0}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-top:.5rem}
+    .card{ border:1px solid #e6e6e6;border-radius:12px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.04); background:#fff; overflow:hidden; }
+    .card h3{margin:.2rem 0 .8rem 0;color:#222}
+    label{display:block;font-weight:600;margin:.6rem 0 .2rem 0}
+    input, select, button{
+      width:100%;padding:.55rem .6rem;border:1px solid #ddd;border-radius:10px;font-size:15px;background:#fff;
+    }
+    button.copy{cursor:pointer;border-color:var(--garnet);color:var(--garnet)}
+    button.copy:active{transform:scale(0.99)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+    @media (max-width:520px){ .row{grid-template-columns:1fr} }
+    .muted{color:#666;font-size:.95rem}
+    .out{ margin-top:.7rem;padding:.6rem;border-radius:10px;border:1px dashed #ddd;background:#fafafa;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; word-wrap:break-word; }
+    .df{font-weight:800;color:var(--garnet)}
+    .tip{background:#fff7e6;border:1px solid #ffe1a3;color:#7a4b00;padding:.6rem;border-radius:10px;margin-top:.75rem;font-size:.95rem}
+    footer{border-top:1px solid #eee;margin-top:2rem;padding:1rem;color:#555}
+    .pill{ display:inline-block;padding:.2rem .55rem;border-radius:999px;border:1px solid var(--garnet);color:var(--garnet);
+      font-size:.85rem;margin:.2rem 0; }
+    .small{font-size:.9rem}
+    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .warn{color:#9c2a2a}
+    .formula{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:.92rem}
+    .actions{display:flex;gap:.6rem;margin-top:.6rem}
+    .actions > *{flex:1}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Interactive Degrees of Freedom (df) Calculator</h1>
+      <p class="muted">t tests, ANOVA, chi-square, correlation/regression, factor analysis, and <strong>CFA/SEM</strong>. With formula previews and copy buttons.</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="cards">
+
+      <section class="card" id="t-one">
+        <h3>One-sample or Paired <span class="pill">t</span></h3>
+        <div class="row">
+          <div>
+            <label for="n_one">Sample size <span class="small muted">(n)</span></label>
+            <input type="number" id="n_one" min="1" step="1" value="30">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="tip small">df = n − 1</div>
+          </div>
+        </div>
+        <div class="out">df = <span id="df_one" class="df">29</span></div>
+        <div class="actions">
+          <button class="copy" data-target="df_one">Copy df</button>
+        </div>
+      </section>
+
+      <section class="card" id="t-two">
+        <h3>Two-sample <span class="pill">t</span></h3>
+        <label for="varAssumption">Variance assumption</label>
+        <select id="varAssumption">
+          <option value="equal">Equal variances (pooled)</option>
+          <option value="welch">Unequal variances (Welch–Satterthwaite)</option>
+        </select>
+        <div class="row">
+          <div>
+            <label for="n1">Group 1 size <span class="small muted">(n₁)</span></label>
+            <input type="number" id="n1" min="2" step="1" value="20">
+          </div>
+          <div>
+            <label for="n2">Group 2 size <span class="small muted">(n₂)</span></label>
+            <input type="number" id="n2" min="2" step="1" value="22">
+          </div>
+        </div>
+        <div id="welchExtras">
+          <div class="row">
+            <div>
+              <label for="s1">Group 1 SD <span class="small muted">(s₁)</span></label>
+              <input type="number" id="s1" min="0" step="any" value="10">
+            </div>
+            <div>
+              <label for="s2">Group 2 SD <span class="small muted">(s₂)</span></label>
+              <input type="number" id="s2" min="0" step="any" value="14">
+            </div>
+          </div>
+          <div class="tip small">Welch–Satterthwaite: df = (s₁²/n₁ + s₂²/n₂)² / [ (s₁⁴ / (n₁² (n₁−1))) + (s₂⁴ / (n₂² (n₂−1))) ]</div>
+        </div>
+        <div class="out formula" id="t_two_formula"></div>
+        <div class="out">df = <span id="df_two" class="df">40</span></div>
+        <div class="actions">
+          <button class="copy" data-target="df_two">Copy df</button>
+          <button class="copy" data-target="t_two_formula">Copy formula</button>
+        </div>
+      </section>
+
+      <section class="card" id="anova">
+        <h3>One-way ANOVA</h3>
+        <div class="row">
+          <div>
+            <label for="k"># groups <span class="small muted">(k)</span></label>
+            <input type="number" id="k" min="2" step="1" value="3">
+          </div>
+          <div>
+            <label for="N">Total N <span class="small muted">(Σnᵢ)</span></label>
+            <input type="number" id="N" min="3" step="1" value="60">
+          </div>
+        </div>
+        <div class="out formula" id="anova_formula"></div>
+        <div class="out">
+          df<sub>between</sub> = <span id="df_ab" class="df">2</span><br/>
+          df<sub>within</sub> = <span id="df_aw" class="df">57</span><br/>
+          df<sub>total</sub> = <span id="df_at" class="df">59</span>
+        </div>
+        <div class="actions">
+          <button class="copy" data-target="df_ab">Copy between</button>
+          <button class="copy" data-target="df_aw">Copy within</button>
+          <button class="copy" data-target="df_at">Copy total</button>
+        </div>
+      </section>
+
+      <section class="card" id="chisq">
+        <h3>Chi-square</h3>
+        <label for="chiType">Test type</label>
+        <select id="chiType">
+          <option value="gof">Goodness-of-fit (known expected)</option>
+          <option value="indep">Independence (r×c table)</option>
+        </select>
+        <div id="gofWrap" class="row">
+          <div>
+            <label for="cats"># categories</label>
+            <input type="number" id="cats" min="2" step="1" value="5">
+          </div>
+          <div>
+            <label for="estParams"># parameters estimated</label>
+            <input type="number" id="estParams" min="0" step="1" value="0">
+          </div>
+        </div>
+        <div id="rcWrap" class="row" style="display:none">
+          <div>
+            <label for="r"># rows (r)</label>
+            <input type="number" id="r" min="2" step="1" value="3">
+          </div>
+          <div>
+            <label for="c"># columns (c)</label>
+            <input type="number" id="c" min="2" step="1" value="4">
+          </div>
+        </div>
+        <div class="out formula" id="chi_formula"></div>
+        <div class="out">df = <span id="df_chi" class="df">4</span></div>
+        <div class="actions">
+          <button class="copy" data-target="df_chi">Copy df</button>
+          <button class="copy" data-target="chi_formula">Copy formula</button>
+        </div>
+      </section>
+
+      <section class="card" id="corr">
+        <h3>Correlation / Simple Linear Regression</h3>
+        <div class="row">
+          <div>
+            <label for="n_corr">Sample size <span class="small muted">(n)</span></label>
+            <input type="number" id="n_corr" min="3" step="1" value="25">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="tip small">df = n − 2</div>
+          </div>
+        </div>
+        <div class="out">df = <span id="df_corr" class="df">23</span></div>
+        <div class="actions">
+          <button class="copy" data-target="df_corr">Copy df</button>
+        </div>
+      </section>
+
+      <section class="card" id="factor">
+        <h3>Factor Analysis (df)</h3>
+        <div class="row">
+          <div>
+            <label for="p_items"># observed variables <span class="small muted">(items, p)</span></label>
+            <input type="number" id="p_items" min="3" step="1" value="48">
+          </div>
+          <div>
+            <label for="m_factors"># factors <span class="small muted">(m)</span></label>
+            <input type="number" id="m_factors" min="1" step="1" value="8">
+          </div>
+        </div>
+        <div class="out formula" id="factor_formula"></div>
+        <div class="out">
+          df = <span id="df_factor" class="df">1052</span>
+        </div>
+        <div class="actions">
+          <button class="copy" data-target="df_factor">Copy df</button>
+          <button class="copy" data-target="factor_formula">Copy formula</button>
+        </div>
+        <div class="tip small">
+          Formula: df = p(p−3)/2 − m(m−1)/2. <span class="muted">Assumes a standard factor model with free unique variances and factor correlations.</span>
+        </div>
+        <p class="small muted" id="factorWarn"></p>
+      </section>
+
+      <section class="card" id="cfa">
+        <h3>CFA / SEM (Generic df)</h3>
+        <p class="muted small">This generic calculator approximates model df as <span class="code">df = #knowns − #free parameters</span>.<br>
+        #knowns = p(p+1)/2 (unique elements of covariance matrix for p observed variables). Provide counts below for free parameters.</p>
+        <div class="row">
+          <div>
+            <label for="p_obs">Observed variables <span class="small muted">(p)</span></label>
+            <input type="number" id="p_obs" min="1" step="1" value="10">
+          </div>
+          <div>
+            <label for="free_loadings">Free loadings</label>
+            <input type="number" id="free_loadings" min="0" step="1" value="20">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="free_factor_vars">Free factor variances</label>
+            <input type="number" id="free_factor_vars" min="0" step="1" value="0">
+          </div>
+          <div>
+            <label for="free_factor_covs">Free factor covariances</label>
+            <input type="number" id="free_factor_covs" min="0" step="1" value="10">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="free_intercepts">Free intercepts/means</label>
+            <input type="number" id="free_intercepts" min="0" step="1" value="0">
+          </div>
+          <div>
+            <label for="free_resid_vars">Free residual variances</label>
+            <input type="number" id="free_resid_vars" min="0" step="1" value="10">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="free_resid_covs">Free residual covariances</label>
+            <input type="number" id="free_resid_covs" min="0" step="1" value="0">
+          </div>
+          <div>
+            <label for="other_free">Other free parameters</label>
+            <input type="number" id="other_free" min="0" step="1" value="0">
+          </div>
+        </div>
+        <div class="out formula" id="cfa_formula"></div>
+        <div class="out">df = <span id="df_cfa" class="df">—</span></div>
+        <div class="actions">
+          <button class="copy" data-target="df_cfa">Copy df</button>
+          <button class="copy" data-target="cfa_formula">Copy formula</button>
+        </div>
+        <div class="tip small">Notes: In practice, identification requires constraints (e.g., fixing one loading per factor or factor variance). Count only truly free parameters; constraints and fixed parameters do not add to the free count.</div>
+        <p class="small warn" id="cfa_warn"></p>
+      </section>
+
+    </div>
+
+    <h2>How to use</h2>
+    <ol class="small">
+      <li>Pick the card for your test.</li>
+      <li>Enter the inputs.</li>
+      <li>Your df and formula preview update instantly. Use the Copy buttons.</li>
+    </ol>
+
+    <footer class="muted small">
+      v3 — boxes are now strictly contained within cards; mobile-friendly rows; copy-to-clipboard enabled.
+    </footer>
+  </div>
+
+<script>
+const clampInt = (v, min) => {
+  v = parseInt(v, 10);
+  if (isNaN(v)) return null;
+  if (typeof min === 'number' && v < min) return null;
+  return v;
+};
+const clampFloat = (v, min) => {
+  v = parseFloat(v);
+  if (isNaN(v)) return null;
+  if (typeof min === 'number' && v < min) return null;
+  return v;
+};
+const setText = (id, text) => document.getElementById(id).textContent = text;
+
+// copy buttons
+document.addEventListener('click', (e)=>{
+  if(e.target.matches('button.copy')){
+    const id = e.target.getAttribute('data-target');
+    const el = document.getElementById(id);
+    const text = el ? el.textContent : '';
+    navigator.clipboard.writeText(text).then(()=>{
+      e.target.textContent = 'Copied!';
+      setTimeout(()=> e.target.textContent = 'Copy ' + (id.includes('df')?'df':'formula'), 900);
+    });
+  }
+});
+
+// One-sample / Paired t
+function updateOne(){
+  const n = clampInt(document.getElementById('n_one').value, 1);
+  const df = (n !== null && n >= 1) ? (n - 1) : '—';
+  setText('df_one', df);
+}
+
+// Two-sample t
+function updateTwo(){
+  const n1 = clampInt(document.getElementById('n1').value, 2);
+  const n2 = clampInt(document.getElementById('n2').value, 2);
+  const mode = document.getElementById('varAssumption').value;
+  const welchExtras = document.getElementById('welchExtras');
+  welchExtras.style.display = (mode === 'welch') ? 'block' : 'none';
+
+  if(n1===null || n2===null){ setText('df_two','—'); setText('t_two_formula',''); return; }
+
+  if(mode === 'equal'){
+    const df = n1 + n2 - 2;
+    setText('df_two', df);
+    setText('t_two_formula', `df = n1 + n2 − 2 = ${n1} + ${n2} − 2 = ${df}`);
+  }else{
+    const s1 = clampFloat(document.getElementById('s1').value, 0);
+    const s2 = clampFloat(document.getElementById('s2').value, 0);
+    if(s1===null || s2===null || n1<=1 || n2<=1){ setText('df_two','—'); setText('t_two_formula',''); return; }
+    const a = (s1*s1)/n1;
+    const b = (s2*s2)/n2;
+    const numerator = (a + b) * (a + b);
+    const denom = ( (a*a)/(n1-1) ) + ( (b*b)/(n2-1) );
+    const df = numerator/denom;
+    setText('df_two', (isFinite(df) ? df.toFixed(3) : '—'));
+    setText('t_two_formula', `df = (s1^2/n1 + s2^2/n2)^2 / [(s1^4/((n1-1)n1^2)) + (s2^4/((n2-1)n2^2))] = ${df.toFixed(3)}`);
+  }
+}
+
+// ANOVA
+function updateANOVA(){
+  const k = clampInt(document.getElementById('k').value, 2);
+  const N = clampInt(document.getElementById('N').value, 1);
+  if(k===null || N===null){ setText('df_ab','—'); setText('df_aw','—'); setText('df_at','—'); setText('anova_formula',''); return; }
+  const dfb = k - 1;
+  const dfw = N - k;
+  const dft = N - 1;
+  setText('df_ab', dfb >= 1 ? dfb : '—');
+  setText('df_aw', dfw >= 1 ? dfw : '—');
+  setText('df_at', dft >= 1 ? dft : '—');
+  setText('anova_formula', `df_between = k − 1 = ${k} − 1 = ${dfb}; df_within = N − k = ${N} − ${k} = ${dfw}; df_total = N − 1 = ${N} − 1 = ${dft}`);
+}
+
+// Chi-square
+function updateChi(){
+  const type = document.getElementById('chiType').value;
+  const gofWrap = document.getElementById('gofWrap');
+  const rcWrap  = document.getElementById('rcWrap');
+  gofWrap.style.display = (type==='gof') ? 'grid' : 'none';
+  rcWrap.style.display  = (type==='indep') ? 'grid' : 'none';
+
+  if(type==='gof'){
+    const k = clampInt(document.getElementById('cats').value, 2);
+    const m = clampInt(document.getElementById('estParams').value, 0);
+    if(k===null || m===null){ setText('df_chi','—'); setText('chi_formula',''); return; }
+    const df = k - 1 - m;
+    setText('df_chi', df >= 1 ? df : '—');
+    setText('chi_formula', `df = k − 1 − m = ${k} − 1 − ${m} = ${df}`);
+  }else{
+    const r = clampInt(document.getElementById('r').value, 2);
+    const c = clampInt(document.getElementById('c').value, 2);
+    if(r===null || c===null){ setText('df_chi','—'); setText('chi_formula',''); return; }
+    const df = (r-1)*(c-1);
+    setText('df_chi', df);
+    setText('chi_formula', `df = (r − 1)(c − 1) = (${r} − 1)(${c} − 1) = ${(r-1)}×${(c-1)} = ${df}`);
+  }
+}
+
+// Correlation / regression
+function updateCorr(){
+  const n = clampInt(document.getElementById('n_corr').value, 3);
+  setText('df_corr', n!==null ? (n-2) : '—');
+}
+
+// Factor analysis
+function updateFactor(){
+  const p = clampInt(document.getElementById('p_items').value, 3);
+  const m = clampInt(document.getElementById('m_factors').value, 1);
+  const warn = document.getElementById('factorWarn');
+  if(p===null || m===null){ setText('df_factor','—'); setText('factor_formula',''); warn.textContent=''; return; }
+
+  const df = (p*(p-3))/2 - (m*(m-1))/2;
+  setText('df_factor', df >= 0 ? df : '—');
+  setText('factor_formula', `df = p(p−3)/2 − m(m−1)/2 = ${p}(${p}−3)/2 − ${m}(${m}−1)/2 = ${df}`);
+  if(df < 0){
+    warn.textContent = 'Warning: df is negative. Reduce the number of factors or increase items.';
+    warn.className = 'small warn';
+  }else{
+    warn.textContent = '';
+  }
+}
+
+// CFA/SEM
+function updateCFA(){
+  const p = clampInt(document.getElementById('p_obs').value, 1);
+  const L = clampInt(document.getElementById('free_loadings').value, 0);
+  const FV = clampInt(document.getElementById('free_factor_vars').value, 0);
+  const FC = clampInt(document.getElementById('free_factor_covs').value, 0);
+  const INT = clampInt(document.getElementById('free_intercepts').value, 0);
+  const RV = clampInt(document.getElementById('free_resid_vars').value, 0);
+  const RC = clampInt(document.getElementById('free_resid_covs').value, 0);
+  const O = clampInt(document.getElementById('other_free').value, 0);
+
+  const knowns = p*(p+1)/2;
+  const free = (L||0)+(FV||0)+(FC||0)+(INT||0)+(RV||0)+(RC||0)+(O||0);
+  const df = knowns - free;
+  const warn = document.getElementById('cfa_warn');
+  setText('df_cfa', isFinite(df) ? df : '—');
+  setText('cfa_formula', `df = p(p+1)/2 − free = ${p}(${p}+1)/2 − (${free}) = ${knowns} − ${free} = ${df}`);
+  if(df < 0){
+    warn.textContent = 'Warning: df is negative (underidentified). Reduce free parameters or add constraints.';
+  }else{
+    warn.textContent = '';
+  }
+}
+
+// wire up
+['n_one'].forEach(id=> document.getElementById(id).addEventListener('input', updateOne));
+['varAssumption','n1','n2','s1','s2'].forEach(id=> document.getElementById(id).addEventListener('input', updateTwo));
+['k','N'].forEach(id=> document.getElementById(id).addEventListener('input', updateANOVA));
+['chiType','cats','estParams','r','c'].forEach(id=> document.getElementById(id).addEventListener('input', updateChi));
+['n_corr'].forEach(id=> document.getElementById(id).addEventListener('input', updateCorr));
+['p_items','m_factors'].forEach(id=> document.getElementById(id).addEventListener('input', updateFactor));
+['p_obs','free_loadings','free_factor_vars','free_factor_covs','free_intercepts','free_resid_vars','free_resid_covs','other_free']
+  .forEach(id=> document.getElementById(id).addEventListener('input', updateCFA));
+
+// initial compute
+updateOne(); updateTwo(); updateANOVA(); updateChi(); updateCorr(); updateFactor(); updateCFA();
+</script>
+</body>
+</html>
