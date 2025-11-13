@@ -299,6 +299,9 @@ document.getElementById('btn-ml').addEventListener('click', () => {
     const dDf  = df2 - df1;
 
     if (dDf <= 0) throw new Error("Model 2 must have ≥ df than Model 1 (nested & more constrained).");
+    if (dChi < 0) {
+      throw new Error("χ²(constrained) must be ≥ χ²(unconstrained). Check model order.");
+    }
 
     const p = chiSquareSF(dChi, dDf);
 
