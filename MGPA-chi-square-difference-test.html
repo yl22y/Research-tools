@@ -221,8 +221,8 @@
   </main>
 
 <script>
-/* ---------- Math helpers: Gamma/Chi-square survival ---------- */
-/* log-gamma using Lanczos approximation */
+/* ---------- Robust Chi-square survival (upper tail) ---------- */
+/* log-gamma via Lanczos */
 function gammaln(z){
   const g = 7, p = [
     0.99999999999980993,
@@ -231,61 +231,44 @@ function gammaln(z){
     12.507343278686905,  -0.13857109526572012,
     9.9843695780195716e-6, 1.5056327351493116e-7
   ];
-  if(z < 0.5){
-    // reflection formula
+  if (z < 0.5) {
     return Math.log(Math.PI) - Math.log(Math.sin(Math.PI*z)) - gammaln(1 - z);
   }
   z -= 1;
   let x = p[0];
-  for(let i=1;i<p.length;i++) x += p[i]/(z+i);
+  for (let i=1; i<p.length; i++) x += p[i]/(z+i);
   const t = z + g + 0.5;
   return 0.5*Math.log(2*Math.PI) + (z+0.5)*Math.log(t) - t + Math.log(x) - Math.log(z+1);
 }
 
-/* Regularized upper incomplete gamma Q(s,x) via continued fraction */
-function gammainc_Q(s, x){
+/* Upper regularized gamma Q(a,x) via Lentz continued fraction */
+function igammaQ(a, x){
   if (x <= 0) return 1;
-  if (x < s + 1){
-    // Use P(s,x) series then Q=1-P
-    let sum = 1/s, term = sum, n = 1;
-    while (Math.abs(term) > 1e-14 && n < 10000){
-      term *= x / (s + n);
-      sum += term;
-      n++;
-    }
-    const logP = -x + s*Math.log(x) - gammaln(s) + Math.log(sum);
-    const P = Math.exp(logP);
-    return Math.max(0, Math.min(1, 1 - P));
-  } else {
-    // Continued fraction for Q directly
-    let a0 = 1, a1 = x, b0 = 0, b1 = 1, fac = 1, n = 1;
-    let gOld = a1/b1, g = gOld;
-    while (n < 10000){
-      const an = n;
-      const coef = an - s;
-      a0 = (a1 + a0*coef)*1;
-      b0 = (b1 + b0*coef)*1;
+  const gln = gammaln(a);
+  const EPS = 1e-14, FPMIN = 1e-300;
 
-      a1 = x*a0 + an*a1;
-      b1 = x*b0 + an*b1;
+  let b = x + 1 - a;
+  let c = 1 / FPMIN;
+  let d = 1 / Math.max(b, FPMIN);
+  let h = d;
 
-      if (b1 !== 0){
-        g = a1/b1;
-        if (Math.abs((g - gOld)/g) < 1e-12) break;
-        gOld = g;
-      }
-      n++;
-    }
-    const logQ = -x + s*Math.log(x) - gammaln(s) + Math.log(g);
-    return Math.max(0, Math.min(1, Math.exp(logQ)));
+  for (let i=1; i<=10000; i++){
+    const an = -i * (i - a);
+    b += 2;
+    d = an * d + b; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = b + an / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    const delta = d * c;
+    h *= delta;
+    if (Math.abs(delta - 1) < EPS) break;
   }
+  return Math.exp(-x + a*Math.log(x) - gln) * h;
 }
 
-/* Chi-square survival function: p = P(Χ^2_k >= x) */
+/* Chi-square survival: p = P(Χ^2_k >= x) = Q(k/2, x/2) */
 function chiSquareSF(x, k){
   if (x < 0 || k <= 0) return NaN;
-  const s = k/2, t = x/2;
-  return gammainc_Q(s, t);
+  return igammaQ(k/2, x/2);
 }
 
 /* ---------- UI helpers ---------- */
